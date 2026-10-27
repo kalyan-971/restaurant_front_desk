@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<title>Staff · {{ r.name }}</title>
+<style>
+  :root { --ink:#1d1b18; --muted:#6b645a; --line:#e3ddd3; --bg:#faf7f2; --accent:#b4441f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin:0; font-size:24px; } h2 { font-size:18px; margin:32px 0 8px; }
+  .stats { color:var(--muted); margin:4px 0 0; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:8px 0; }
+  .row { display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; }
+  .muted { color:var(--muted); font-size:13px; }
+  .cancelled { opacity:.5; text-decoration: line-through; }
+  textarea { width:100%; font:inherit; padding:10px; border:1px solid var(--line); border-radius:8px; }
+  input[type=number] { width:90px; font:inherit; padding:8px; border:1px solid var(--line); border-radius:8px; }
+  button, a.btn { font:inherit; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; text-decoration:none; cursor:pointer; }
+  button.ghost { background:#fff; color:var(--accent); }
+  .tag { font-size:12px; padding:2px 8px; border-radius:99px; background:#f0efec; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ r.name }}</h1>
+  <p class="stats">{{ covers_today }} covers booked today · AI replies {{ "wait for approval (shadow mode)" if r.shadow_mode else "send automatically" }}</p>
+
+  {% if drafts %}
+  <h2>Replies waiting for approval ({{ drafts|length }})</h2>
+  {% for m in drafts %}
+    <form class="card" method="post" action="/staff/{{ r.id }}/drafts/{{ m.id }}">
+      <div class="muted">To {{ m.phone }}</div>
+      <textarea name="body" rows="3">{{ m.body }}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button name="action" value="send">Send</button>
+        <button class="ghost" name="action" value="discard">Discard</button>
+      </div>
+    </form>
+  {% endfor %}
+  {% endif %}
+
+  <h2>Bookings today and tomorrow</h2>
+  {% for b in bookings %}
+    <div class="card row {{ 'cancelled' if b.status == 'cancelled' }}">
+      <div><strong>{{ b.when }}</strong> · {{ b.name }} · {{ b.party_size }} ppl
+        <div class="muted">{{ b.phone }} {% if b.reminded %}<span class="tag">reminded</span>{% endif %}</div></div>
+      <div class="row">
+        <a class="btn" href="tel:{{ b.phone }}">Call</a>
+        {% if b.status == 'confirmed' %}
+        <form method="post" action="/staff/{{ r.id }}/bookings/{{ b.id }}/cancel" onsubmit="return confirm('Cancel this booking?')">
+          <button class="ghost">Cancel</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <p class="muted">No bookings yet.</p>
+  {% endfor %}
+
+  <h2>Recent messages</h2>
+  {% for m in messages if m.direction != 'draft' %}
+    <div class="card">
+      <div class="muted">{{ {'in':'From','out':'To','alert':'Alert'}[m.direction] }} {{ m.phone }}</div>
+      {{ m.body }}
+    </div>
+  {% else %}
+    <p class="muted">No messages yet.</p>
+  {% endfor %}
+
+  <h2>Settings</h2>
+  <form class="card" method="post" action="/staff/{{ r.id }}/settings">
+    <label class="muted" for="fact_sheet">Fact sheet — the AI only answers from this. Include hours, menu notes, allergens, parking, BYO.</label>
+    <textarea id="fact_sheet" name="fact_sheet" rows="8">{{ r.fact_sheet }}</textarea>
+    <div class="row" style="margin-top:12px">
+      <label>Max covers per {{ r.slot_minutes }} min <input type="number" name="max_covers_per_slot" min="1" value="{{ r.max_covers_per_slot }}"></label>
+      <label><input type="checkbox" name="shadow_mode" {% if r.shadow_mode %}checked{% endif %}> Shadow mode (approve AI replies)</label>
+      <button>Save</button>
+    </div>
+  </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a table · {{ r.name }}</title>
+<style>
+  :root { --ink:#1d1b18; --muted:#6b645a; --line:#e3ddd3; --bg:#faf7f2; --accent:#b4441f; --ok:#2f6b3a; --err:#a3261b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 440px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  label { display:block; font-weight:600; font-size:14px; margin: 16px 0 6px; }
+  input, select { width:100%; font-size:17px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  button { margin-top:24px; width:100%; padding:14px; font-size:17px; font-weight:600; border:0; border-radius:10px; background:var(--accent); color:#fff; }
+  .msg { padding:14px; border-radius:10px; margin-bottom:16px; }
+  .err { background:#fbebeb; color:var(--err); }
+  .ok { background:#e5f4e4; color:var(--ok); }
+  .note { color:var(--muted); font-size:13px; margin-top:16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ r.name }}</h1>
+  <p class="sub">Book a table</p>
+
+  {% if done %}
+    <div class="msg ok"><strong>You're booked for {{ done }}.</strong><br>We've sent a confirmation text. Reply C to that text to cancel.</div>
+  {% else %}
+    {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+    <form method="post">
+      <div class="row">
+        <div>
+          <label for="day">Date</label>
+          <input id="day" name="day" type="date" min="{{ today }}" max="{{ max_date }}" value="{{ form.day or today }}" required>
+        </div>
+        <div>
+          <label for="at">Time</label>
+          <select id="at" name="at" required>
+            {% for t in times %}<option value="{{ t }}" {% if form.at == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <label for="party_size">Number of people</label>
+      <select id="party_size" name="party_size">
+        {% for n in range(1, (r.max_online_party or 7) + 1) %}<option value="{{ n }}" {% if form.party_size == n %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+      <label for="name">Name</label>
+      <input id="name" name="name" autocomplete="name" value="{{ form.name or '' }}" required>
+      <label for="phone">Mobile</label>
+      <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="04xx xxx xxx" value="{{ form.phone or '' }}" required>
+      <button type="submit">Book table</button>
+    </form>
+    <p class="note">Bigger group? Text or call us and the team will sort it out. Your number is only used for this booking.</p>
+  {% endif %}
+</main>
+</body>
+</html>
